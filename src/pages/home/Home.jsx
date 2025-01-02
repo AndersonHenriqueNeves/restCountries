@@ -4,20 +4,22 @@ import Typography from "@mui/material/Typography";
 import SearchBar from "../../components/SearchBar";
 import RegionFilter from "../../components/RegionFilter";
 import FlagList from "../../components/FlagList";
-import axios from 'axios';
+import axios from "axios";
 
 const Home = () => {
   const [countries, setCountries] = useState([]);
+  const [filteredCountries, setFilteredCountries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [region, setRegion] = useState("");
   const [search, setSearch] = useState("");
 
+  // Fetch all countries on initial load
   useEffect(() => {
-    fetch("https://restcountries.com/v3.1/all")
-      .then((response) => response.json())
-      .then((data) => {
-        setCountries(data);
+    axios
+      .get("https://restcountries.com/v3.1/all")
+      .then((response) => {
+        setCountries(response.data);
         setLoading(false);
       })
       .catch((err) => {
@@ -26,36 +28,32 @@ const Home = () => {
       });
   }, []);
 
-  
 
-  const handleSearchChange = (e) => setSearch(e.target.value);
-  const handleRegionChange = async (e) => {
-    try {
-      const response = await axios.get(`https://restcountries.com/v3.1/region/${e.target.value}`)
-      setFilteredCountries (response.data)
-    }catch(error) {
-      throw error
-    } 
-
-  };
-
-  const [filteredCountries, setFilteredCountries] = useState(
-   
-  )
-  const countriesFilter = () => {
-    const newCountries =  countries.filter(
+  useEffect(() => {
+    const filtered = countries.filter(
       (country) =>
         (!region || country.region === region) &&
         (!search || country.name.common.toLowerCase().includes(search.toLowerCase()))
-    )
-    setFilteredCountries (newCountries)
+    );
+    setFilteredCountries(filtered);
+  }, [countries, region, search]);
 
-  }
-  useEffect (
-    () => {
-      countriesFilter()
-         },[countries, search]
-  )
+  
+  const handleSearchChange = (e) => setSearch(e.target.value);
+
+  const handleRegionChange = (e) => {
+    const selectedRegion = e.target.value;
+    setRegion(selectedRegion);
+
+    if (selectedRegion) {
+      axios
+        .get(`https://restcountries.com/v3.1/region/${selectedRegion}`)
+        .then((response) => {
+          setFilteredCountries(response.data);
+        })
+        .catch(() => setError("Error fetching countries by region"));
+    }
+  };
 
   return (
     <Box
